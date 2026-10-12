@@ -1,0 +1,46 @@
+name: Android Compiler
+on:
+  workflow_dispatch:
+    inputs:
+      project_name:
+        description: 'Nome do Projeto'
+        required: false
+        default: 'app'
+      build_type:
+        description: 'Tipo de Build'
+        required: false
+        default: 'debug'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Configurar JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Descompactar Codigo Fonte
+        run: |
+          if [ -f "build_source/project.zip" ]; then
+            unzip -o build_source/project.zip -d .
+          fi
+          chmod +x gradlew || true
+
+      - name: Compilar APK com Gradle
+        run: |
+          if [ -f "gradlew" ]; then
+            ./gradlew assembleDebug --stacktrace || ./gradlew assembleRelease --stacktrace
+          else
+            gradle assembleDebug --stacktrace || gradle assembleRelease --stacktrace
+          fi
+
+      - name: Enviar Artefato APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-compiled-apk
+          path: '**/build/outputs/apk/**/*.apk'
